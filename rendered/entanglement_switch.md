@@ -75,7 +75,7 @@ are obtained.
 
 ````@example entanglement_switch
 @resumable function request_fulfiller(env::Environment, switch::EntanglementSwitch,
-        request::Vector{Int}, max_wait_time)
+        request::Vector{Int})
 
     switch.num_open_requests += 1
 
@@ -96,7 +96,7 @@ Finally, there we make a requester process that randomly generates and issues re
 
 ````@example entanglement_switch
 @resumable function requester(env::Environment, switch::EntanglementSwitch,
-        num_end_nodes_total, num_end_nodes_per_request, request_rate, max_wait_time)
+        num_end_nodes_total, num_end_nodes_per_request, request_rate)
     distribution = Exponential(1 / request_rate)
     while true
         if switch.num_open_requests > 10000
@@ -105,7 +105,7 @@ Finally, there we make a requester process that randomly generates and issues re
         @yield timeout(env, rand(distribution))
         request = randperm(num_end_nodes_total)[1:num_end_nodes_per_request]
         #md println("$(now(env)): new request $request")
-        @process request_fulfiller(env, switch, request, max_wait_time)
+        @process request_fulfiller(env, switch, request)
     end
 end
 ````
@@ -119,7 +119,6 @@ num_communication_qubits = 8
 num_end_nodes = 3
 request_rates = [0.05, 0.01]  # entanglement between 2, 3, ... end nodes
 success_probabilities = [0.1, 0.1, 0.1]
-max_wait_time = 100
 ````
 
 initialize the simulation
@@ -127,7 +126,7 @@ initialize the simulation
 ````@example entanglement_switch
 sim = Simulation()
 switch = EntanglementSwitch(sim, num_communication_qubits)
-[@process requester(sim, switch, num_end_nodes, i + 1, request_rates[i], max_wait_time)
+[@process requester(sim, switch, num_end_nodes, i + 1, request_rates[i])
     for i in eachindex(request_rates)]
 [@process entangler(sim, switch, success_probabilities[i], i) for i in 1:num_end_nodes]
 ````
