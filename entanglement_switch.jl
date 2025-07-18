@@ -98,7 +98,7 @@ end
             # println("$(now(env)): entanglement $end_node created")
             push!(switch.entanglements, end_node)
             put!(switch.entanglement_tickets, end_node)
-            push!(ent_success_times,duration)
+            # push!(ent_success_times,duration)
             # println("Entanglement: $(switch.entanglements)")
         end
     end
