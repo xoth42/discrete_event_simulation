@@ -28,13 +28,15 @@ mutable struct EntanglementSwitch
     entanglement_tickets::Store{Int}
     num_open_requests::Int
     num_fulfilled_requests::Int
+    max_wait_timeout::Float64
+    max_open_requests::Float64
     """
     we use an inner constructor: you only need to provide the environment and the number
     of qubits when creating a new switch instance.
     """
     function EntanglementSwitch(env::Environment, num_qubits::Int)
         new(env, Resource(env, num_qubits, level=num_qubits), Int[],
-            Store{Int}(env; capacity=num_qubits), 0, 0)
+            Store{Int}(env; capacity=num_qubits), 0, 0,0.0,0.0)
     end
 end
 
@@ -63,6 +65,7 @@ end
     # open_req_wait = 0
 
     while true
+
         # reset the open_req_wait if requests are under the threshold
         # if env.num_open_requests <= max_open_requests
         #     open_req_wait = 0
@@ -80,7 +83,7 @@ end
             #         open_req_wait += 1
             #     end
             # # requests might not be maxing, but the wait may be max
-            if (wait_timeout > max_wait_timeout) || (switch.num_open_requests > max_open_requests) #normal wait times (longer time untill throwaway)
+            if (wait_timeout > switch.max_wait_timeout) || (switch.num_open_requests > switch.max_open_requests) #normal wait times (longer time untill throwaway)
                 # throwaway!(wait_timeout,open_req_wait,switch)
                     # throw it all away hack
                 # println("throwing away ent")
@@ -157,6 +160,9 @@ function run_sum_config(max_wait_timeout,max_open_requests;max_time=10000,    t_
         
     sim = Simulation()
     switch = EntanglementSwitch(sim, num_communication_qubits)
+    switch.max_open_requests = max_open_requests
+    switch.max_wait_timeout = max_wait_timeout
+
     [@process requester(sim, switch, num_end_nodes, i + 1, request_rates[i])
         for i in eachindex(request_rates)]
     [@process entangler(sim, switch, success_probabilities[i], i) for i in 1:num_end_nodes]
